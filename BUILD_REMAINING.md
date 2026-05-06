@@ -1,9 +1,12 @@
 # Saadhya Ayurvedalaya — Remaining Build Tasks
 
 ## Status
-- [x] package.json with all dependencies
-- [x] npm install (node_modules)
-- [x] Git repo pushed to https://github.com/sathwiik/sadhya-ayurvedalaya
+- [x] package.json with all dependencies installed
+- [x] Git repo: https://github.com/sathwiik/sadhya-ayurvedalaya
+- [x] BUILD_REMAINING.md + CHANGE_001_no_sms.md saved
+
+## Active Changes
+- CHANGE_001: No SMS/MSG91. Manual Messages page instead. See CHANGE_001_no_sms.md.
 
 ---
 
@@ -12,66 +15,80 @@
 - [ ] `tailwind.config.js`
 - [ ] `postcss.config.js`
 - [ ] `tsconfig.json`
-- [ ] `.env.local` (template)
-- [ ] `.gitignore`
-- [ ] `vercel.json` (cron jobs)
+- [ ] `.env.local` (template — NO MSG91 vars per CHANGE_001)
+- [ ] `.gitignore` (already pushed, verify)
+- [ ] `vercel.json` (backup cron only — NO SMS cron per CHANGE_001)
 - [ ] `pages/_app.tsx`
-- [ ] `pages/_document.tsx` (Inter font)
+- [ ] `pages/_document.tsx` (Inter font from Google Fonts)
+- [ ] `styles/globals.css`
 
 ## BATCH 2 — Lib & Middleware
 - [ ] `lib/supabase.ts` (anon client)
-- [ ] `lib/supabaseAdmin.ts` (service role)
-- [ ] `lib/token.ts` (nanoid)
-- [ ] `lib/sms.ts` (MSG91)
-- [ ] `middleware.ts` (protect /admin/*)
+- [ ] `lib/supabaseAdmin.ts` (service role — server/API only)
+- [ ] `lib/token.ts` (nanoid(21))
+- [ ] `middleware.ts` (protect /admin/* → redirect to /login)
+- NOTE: NO lib/sms.ts per CHANGE_001
 
 ## BATCH 3 — Components
-- [ ] `components/AdminLayout.tsx` (sidebar, auth guard)
-- [ ] `components/PublicLayout.tsx` (header/footer)
-- [ ] `components/ConsentModal.tsx` (full-screen overlay)
-- [ ] `components/PrescriptionPDF.tsx` (react-pdf, A5)
+- [ ] `components/AdminLayout.tsx` — sidebar: Dashboard | Patients | Appointments | Messages | Stock | Billing | Posts | Settings (Messages between Appointments and Stock per CHANGE_001)
+- [ ] `components/PublicLayout.tsx`
+- [ ] `components/ConsentModal.tsx`
+- [ ] `components/PrescriptionPDF.tsx` (A5, @react-pdf/renderer)
 
 ## BATCH 4 — API Routes
-- [ ] `pages/api/appointments/create.ts` (upsert patient + appt + billing + SMS)
-- [ ] `pages/api/token/[token].ts` (validate token, return safe data)
-- [ ] `pages/api/consent.ts` (set consent_given=true)
-- [ ] `pages/api/sms/reminder.ts` (cron: next-day reminders)
-- [ ] `pages/api/backup/run.ts` (cron: monthly Google Drive export)
+- [ ] `pages/api/appointments/create.ts` — upsert patient + token + appt + billing + return token_url (NO SMS per CHANGE_001)
+- [ ] `pages/api/token/[token].ts` — validate token, return safe data
+- [ ] `pages/api/consent.ts` — set consent_given=true
+- [ ] `pages/api/messages/mark-link-sent.ts` — sets link_sent=true for appointment id
+- [ ] `pages/api/messages/mark-reminder-sent.ts` — sets reminder_sent=true for appointment id
+- [ ] `pages/api/backup/run.ts` — monthly Google Drive export (cron)
+- NOTE: NO pages/api/sms/* per CHANGE_001
 
 ## BATCH 5 — Public Pages
-- [ ] `pages/index.tsx` (homepage: hero, about, blog previews, contact)
-- [ ] `pages/blog/index.tsx` (published posts list)
-- [ ] `pages/blog/[id].tsx` (post with react-markdown, ISR)
-- [ ] `pages/appt/[token].tsx` (patient token page, consent flow)
-- [ ] `pages/login.tsx` (doctor email OTP login)
+- [ ] `pages/index.tsx` (homepage)
+- [ ] `pages/blog/index.tsx`
+- [ ] `pages/blog/[id].tsx` (ISR, react-markdown)
+- [ ] `pages/appt/[token].tsx` (consent flow, getServerSideProps)
+- [ ] `pages/login.tsx` (email OTP)
 
-## BATCH 6 — Admin Pages (Part 1)
-- [ ] `pages/admin/index.tsx` (dashboard: cards, today's appointments)
-- [ ] `pages/admin/patients/index.tsx` (list, search, add, delete)
-- [ ] `pages/admin/patients/[id].tsx` (detail, edit inline, history, danger delete)
-- [ ] `pages/admin/appointments/index.tsx` (list, date filter, status badges)
+## BATCH 6 — Admin Pages Part 1
+- [ ] `pages/admin/index.tsx` — dashboard with "Messages pending" card (link_sent=false + tomorrow reminders) per CHANGE_001
+- [ ] `pages/admin/patients/index.tsx`
+- [ ] `pages/admin/patients/[id].tsx`
+- [ ] `pages/admin/appointments/index.tsx`
 
-## BATCH 7 — Admin Pages (Part 2)
-- [ ] `pages/admin/appointments/new.tsx` (2-step form, phone lookup, SMS on create)
-- [ ] `pages/admin/appointments/[id].tsx` (edit appt, resend SMS, quick links)
-- [ ] `pages/admin/prescriptions/[appointmentId].tsx` (add/edit drugs, autocomplete, PDF download)
-- [ ] `pages/admin/stock/index.tsx` (medicine stock, inline edit, low stock sort)
+## BATCH 7 — Admin Pages Part 2
+- [ ] `pages/admin/appointments/new.tsx` — success state: token link + [Copy link] + "Go to Messages →" (NO "SMS sent" per CHANGE_001)
+- [ ] `pages/admin/appointments/[id].tsx`
+- [ ] `pages/admin/prescriptions/[appointmentId].tsx`
+- [ ] `pages/admin/messages/index.tsx` — TWO TABS: Unsent links + Reminders (new page per CHANGE_001)
 
-## BATCH 8 — Admin Pages (Part 3)
-- [ ] `pages/admin/billing/index.tsx` (billing list, mark paid modal, receipt PDF)
-- [ ] `pages/admin/posts/index.tsx` (CRUD content posts, markdown, publish toggle)
-- [ ] `pages/admin/settings/index.tsx` (clinic settings, consent text, test SMS)
+## BATCH 8 — Admin Pages Part 3
+- [ ] `pages/admin/stock/index.tsx`
+- [ ] `pages/admin/billing/index.tsx`
+- [ ] `pages/admin/posts/index.tsx`
+- [ ] `pages/admin/settings/index.tsx` — NO test SMS section per CHANGE_001
 
 ---
 
-## Key Decisions / Notes
+## DB Schema Note (run in Supabase before build)
+Original schema SQL from spec PLUS:
+```sql
+ALTER TABLE appointments ADD COLUMN link_sent BOOLEAN DEFAULT false;
+```
+
+---
+
+## Key Rules (from spec + CHANGE_001)
 - Pages Router (NOT App Router)
-- Supabase Auth email OTP (magic link) — no password
-- Token page: getServerSideProps with service role key — never exposes appointment ID
-- ConsentModal: cannot dismiss by clicking outside — two explicit choices only
-- Aadhaar: last 4 digits only, never full number
-- Phone stored as 10-digit string, "91" prepended only for SMS
-- Billing row auto-created when appointment is created
-- Stock autocomplete on prescription drug name field
-- All admin tables: overflow-x-auto for mobile
-- Colour palette: green-700 primary, amber-600 accent, gray-50 bg
+- Supabase Auth email OTP, no password
+- Service role key: API routes ONLY, never in pages/components
+- Token page: getServerSideProps, never expose appointment_id to client
+- Token page returns: name, date, time, mode, doctor name, complaint, diagnosis/prescriptions (if completed), follow_up_date ONLY
+- Aadhaar: last 4 digits only
+- Phone: 10-digit string stored, no country code
+- Billing row auto-created with appointment
+- Colour: green-700 primary, amber-600 accent, gray-50 bg
+- All admin tables: overflow-x-auto
+- No animations
+- Messages page: copy-to-clipboard + mark-as-sent updates local state only (no reload)
