@@ -3,11 +3,13 @@ import dynamic from 'next/dynamic'
 import AdminLayout from '@/components/AdminLayout'
 import { supabase } from '@/lib/supabase'
 
+// Both PDFDownloadLink and ReceiptPDF must be dynamically imported
+// to prevent react-pdf from running on the server (it uses browser APIs)
 const PDFDownloadLink = dynamic(
   () => import('@react-pdf/renderer').then(m => m.PDFDownloadLink),
   { ssr: false }
 )
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
+const ReceiptPDF = dynamic(() => import('@/components/ReceiptPDF'), { ssr: false })
 
 interface BillingItem { name: string; amount: number }
 interface BillingRow {
@@ -24,53 +26,6 @@ interface BillingRow {
 
 type Filter = 'all' | 'unpaid' | 'paid'
 const PAYMENT_MODES = ['Cash', 'UPI', 'Card']
-
-// Simple receipt PDF
-const receiptStyles = StyleSheet.create({
-  page: { padding: 32, fontSize: 10, fontFamily: 'Helvetica' },
-  title: { fontSize: 16, fontFamily: 'Helvetica-Bold', color: '#15803d', marginBottom: 4 },
-  sub: { fontSize: 9, color: '#6b7280', marginBottom: 16 },
-  divider: { borderBottomWidth: 1, borderBottomColor: '#e5e7eb', marginVertical: 10 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  label: { color: '#6b7280' },
-  value: { fontFamily: 'Helvetica-Bold' },
-  itemRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
-  total: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, paddingTop: 6, borderTopWidth: 2, borderTopColor: '#15803d' },
-  totalLabel: { fontFamily: 'Helvetica-Bold', fontSize: 11 },
-  totalValue: { fontFamily: 'Helvetica-Bold', fontSize: 11, color: '#15803d' },
-})
-
-function ReceiptPDF({ row, clinicName, doctorName }: { row: BillingRow; clinicName: string; doctorName: string }) {
-  const patient = (row.appointments?.patients as any)?.name ?? ''
-  const date = row.appointments?.appt_date ?? ''
-  const items: BillingItem[] = Array.isArray(row.items) ? row.items : []
-  return (
-    <Document>
-      <Page size="A5" style={receiptStyles.page}>
-        <Text style={receiptStyles.title}>{clinicName}</Text>
-        <Text style={receiptStyles.sub}>Dr. {doctorName} · Receipt</Text>
-        <View style={receiptStyles.divider} />
-        <View style={receiptStyles.row}><Text style={receiptStyles.label}>Patient</Text><Text style={receiptStyles.value}>{patient}</Text></View>
-        <View style={receiptStyles.row}><Text style={receiptStyles.label}>Date</Text><Text style={receiptStyles.value}>{date}</Text></View>
-        <View style={receiptStyles.row}><Text style={receiptStyles.label}>Payment mode</Text><Text style={receiptStyles.value}>{row.payment_mode ?? '—'}</Text></View>
-        <View style={receiptStyles.divider} />
-        {items.length > 0 && items.map((item, i) => (
-          <View key={i} style={receiptStyles.itemRow}>
-            <Text>{item.name}</Text>
-            <Text>₹{item.amount}</Text>
-          </View>
-        ))}
-        {items.length === 0 && (
-          <View style={receiptStyles.itemRow}><Text>Consultation</Text><Text>₹{row.fee}</Text></View>
-        )}
-        <View style={receiptStyles.total}>
-          <Text style={receiptStyles.totalLabel}>Total paid</Text>
-          <Text style={receiptStyles.totalValue}>₹{row.fee}</Text>
-        </View>
-      </Page>
-    </Document>
-  )
-}
 
 export default function BillingPage() {
   const [rows, setRows] = useState<BillingRow[]>([])

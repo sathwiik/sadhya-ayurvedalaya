@@ -1,7 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import supabaseAdmin from '@/lib/supabaseAdmin'
-import { drive as driveV3 } from '@googleapis/drive'
-import { GoogleAuth } from 'google-auth-library'
+import { drive as driveV3, auth as googleAuthLib } from '@googleapis/drive'
 import { Readable } from 'stream'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -12,8 +11,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Fetch all tables
-    const [patients, appointments, prescriptions, billing, medicine_stock, content_posts] =
+    // Fetch all tables + settings in parallel
+    const [patients, appointments, prescriptions, billing, medicine_stock, content_posts, settingsRes] =
       await Promise.all([
         supabaseAdmin.from('patients').select('*'),
         supabaseAdmin.from('appointments').select('*'),
@@ -21,15 +20,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         supabaseAdmin.from('billing').select('*'),
         supabaseAdmin.from('medicine_stock').select('*'),
         supabaseAdmin.from('content_posts').select('*'),
+        supabaseAdmin.from('settings').select('clinic_name').eq('id', 1).single(),
       ])
 
     const now = new Date()
     const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+    const clinicName = settingsRes.data?.clinic_name ?? 'Saadhya Ayurvedalaya'
 
     const backupData = {
       exported_at: now.toISOString(),
       month,
-      clinic: 'Saadhya Ayurvedalaya',
+      clinic: clinicName,
       patients: patients.data ?? [],
       appointments: appointments.data ?? [],
       prescriptions: prescriptions.data ?? [],
@@ -38,8 +39,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       content_posts: content_posts.data ?? [],
     }
 
-    // Upload to Google Drive using service account
-    const googleAuth = new GoogleAuth({
+    // Upload to Google Drive using service account (bundled auth from @googleapis/drive)
+    const googleAuth = new googleAuthLib.GoogleAuth({
       credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON!),
       scopes: ['https://www.googleapis.com/auth/drive.file'],
     })
