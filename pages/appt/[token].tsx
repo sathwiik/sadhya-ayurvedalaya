@@ -14,6 +14,7 @@ interface Prescription {
 interface Props {
   valid: boolean
   expired: boolean
+  disabled: boolean
   data?: {
     consent_given: boolean
     consent_text: string
@@ -34,10 +35,42 @@ interface Props {
   token: string
 }
 
-export default function TokenPage({ valid, expired, data, token }: Props) {
+export default function TokenPage({ valid, expired, disabled, data, token }: Props) {
   const [consentGiven, setConsentGiven] = useState(data?.consent_given ?? false)
   const [consentDeclined, setConsentDeclined] = useState(false)
   const [showModal, setShowModal] = useState(!data?.consent_given)
+
+  // Doctor has disabled this link
+  if (disabled) {
+    return (
+      <>
+        <Head><title>Appointment — Saadhya Ayurvedalaya</title></Head>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+          <div className="text-center max-w-sm">
+            <p className="text-green-700 font-bold text-lg mb-6">Saadhya Ayurvedalaya</p>
+            <div className="bg-white border border-gray-200 rounded-lg p-8">
+              <p className="text-2xl mb-3">🏥</p>
+              <h1 className="text-lg font-bold text-gray-900 mb-2">
+                Details currently unavailable
+              </h1>
+              <p className="text-sm text-gray-500 mb-6">
+                Your appointment details are not available online at this time.
+                Please contact us for more information.
+              </p>
+              {data?.clinic_phone && (
+                <a
+                  href={`tel:${data.clinic_phone}`}
+                  className="inline-block bg-green-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold"
+                >
+                  Call {data.clinic_phone}
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      </>
+    )
+  }
 
   // Invalid or expired link
   if (!valid || expired) {
@@ -237,17 +270,25 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const response = await fetch(`${baseUrl}/api/token/${token}`)
 
   if (response.status === 404) {
-    return { props: { valid: false, expired: false, token } }
+    return { props: { valid: false, expired: false, disabled: false, token } }
   }
 
   if (response.status === 410) {
-    return { props: { valid: true, expired: true, token } }
+    return { props: { valid: true, expired: true, disabled: false, token } }
+  }
+
+  if (response.status === 403) {
+    const json = await response.json()
+    if (json.disabled) {
+      return { props: { valid: true, expired: false, disabled: true, token } }
+    }
+    return { props: { valid: false, expired: false, disabled: false, token } }
   }
 
   if (!response.ok) {
-    return { props: { valid: false, expired: false, token } }
+    return { props: { valid: false, expired: false, disabled: false, token } }
   }
 
   const data = await response.json()
-  return { props: { valid: true, expired: false, data, token } }
+  return { props: { valid: true, expired: false, disabled: false, data, token } }
 }

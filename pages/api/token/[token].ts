@@ -22,6 +22,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       diagnosis,
       follow_up_date,
       token_expires_at,
+      token_active,
       consent_given,
       patients (
         name,
@@ -45,6 +46,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Check expiry
   if (new Date(appt.token_expires_at) < new Date()) {
     return res.status(410).json({ error: 'Link expired' })
+  }
+
+  // Check doctor has not disabled this link
+  if (appt.token_active === false) {
+    return res.status(403).json({ error: 'Access disabled', disabled: true })
   }
 
   // Fetch doctor name and clinic name from settings

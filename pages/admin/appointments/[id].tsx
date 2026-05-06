@@ -24,6 +24,7 @@ interface Appointment {
   clinical_notes: string
   follow_up_date: string
   token: string
+  token_active: boolean
   patients: { id: string; name: string; phone: string }
 }
 
@@ -37,6 +38,8 @@ export default function EditAppointment() {
   const [error, setError] = useState('')
   const [resending, setResending] = useState(false)
   const [resent, setResent] = useState(false)
+  const [tokenActive, setTokenActive] = useState(true)
+  const [togglingToken, setTogglingToken] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -49,6 +52,7 @@ export default function EditAppointment() {
         if (!data) { router.push('/admin/appointments'); return }
         setAppt(data as any)
         setForm(data as any)
+        setTokenActive((data as any).token_active !== false)
       })
   }, [id])
 
@@ -87,6 +91,17 @@ export default function EditAppointment() {
         />
       </div>
     )
+  }
+
+  async function handleToggleToken() {
+    setTogglingToken(true)
+    const next = !tokenActive
+    const { error } = await supabase
+      .from('appointments')
+      .update({ token_active: next })
+      .eq('id', id)
+    if (!error) setTokenActive(next)
+    setTogglingToken(false)
   }
 
   async function handleResendLink() {
@@ -200,18 +215,55 @@ export default function EditAppointment() {
         </div>
       </div>
 
-      {/* Resend token link */}
+      {/* Patient link + token access toggle */}
       {appt.token && (
-        <div className="bg-white border border-gray-200 rounded-lg p-5 max-w-lg">
-          <h2 className="font-semibold text-gray-900 mb-1 text-sm">Patient link</h2>
-          <p className="text-xs text-gray-400 mb-3">Copy the appointment link to send to the patient manually.</p>
-          <button
-            onClick={handleResendLink}
-            disabled={resending}
-            className="bg-white border border-gray-300 text-gray-700 text-sm font-medium px-4 py-2 rounded-md hover:border-green-400 hover:text-green-700"
-          >
-            {resent ? 'Link copied ✓' : resending ? 'Copying…' : 'Copy token link'}
-          </button>
+        <div className="bg-white border border-gray-200 rounded-lg p-5 max-w-lg space-y-4">
+          <div>
+            <h2 className="font-semibold text-gray-900 mb-1 text-sm">Patient link</h2>
+            <p className="text-xs text-gray-400 mb-3">Copy the appointment link to send to the patient manually.</p>
+            <button
+              onClick={handleResendLink}
+              disabled={resending}
+              className="bg-white border border-gray-300 text-gray-700 text-sm font-medium px-4 py-2 rounded-md hover:border-green-400 hover:text-green-700"
+            >
+              {resent ? 'Link copied ✓' : resending ? 'Copying…' : 'Copy token link'}
+            </button>
+          </div>
+
+          <div className="border-t border-gray-100 pt-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-900">Token link access</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {tokenActive
+                  ? 'Patient can view their appointment page.'
+                  : 'Patient sees "details unavailable" — they cannot view appointment data.'}
+              </p>
+            </div>
+            <button
+              onClick={handleToggleToken}
+              disabled={togglingToken}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none disabled:opacity-50 ${
+                tokenActive ? 'bg-green-600' : 'bg-gray-300'
+              }`}
+              role="switch"
+              aria-checked={tokenActive}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                tokenActive ? 'translate-x-6' : 'translate-x-1'
+              }`} />
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+              tokenActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+            }`}>
+              {tokenActive ? 'Active' : 'Disabled'}
+            </span>
+            <span className="text-xs text-gray-400">
+              {tokenActive ? 'Link is accessible to patient' : 'Link is blocked'}
+            </span>
+          </div>
         </div>
       )}
     </AdminLayout>
