@@ -1,6 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
+import { createPagesBrowserClient } from '@supabase/auth-helpers-nextjs'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Uses cookie-based storage so the middleware can read the session server-side.
+// Must only be imported in client-side code (pages, useEffect) — never in API routes.
+export const supabase = createPagesBrowserClient()
