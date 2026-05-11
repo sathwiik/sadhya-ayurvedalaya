@@ -9,6 +9,7 @@ interface Settings {
   phone: string
   email: string
   consent_text: string
+  default_fee: number
 }
 
 const defaults: Settings = {
@@ -18,6 +19,7 @@ const defaults: Settings = {
   phone: '',
   email: '',
   consent_text: 'Saadhya Ayurvedalaya stores your appointment details to provide you with care. By tapping Agree, you allow us to show your records here. You can request deletion of your data at any time by calling us.',
+  default_fee: 0,
 }
 
 export default function SettingsPage() {
@@ -93,6 +95,18 @@ export default function SettingsPage() {
               <input type="email" value={form.email} onChange={set('email')}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600" />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Default appointment fee (₹)</label>
+            <input
+              type="number"
+              min={0}
+              value={form.default_fee}
+              onChange={e => setForm(f => ({ ...f, default_fee: Number(e.target.value) }))}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600"
+            />
+            <p className="text-xs text-gray-400 mt-1">Auto-filled into billing when a new appointment is created. Can be changed per-appointment in billing.</p>
           </div>
         </div>
 

@@ -75,13 +75,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ error: 'Failed to create appointment' })
   }
 
-  // 4. Insert empty billing record
+  // 4. Insert billing record seeded with default fee from settings
+  const { data: settingsData } = await supabaseAdmin
+    .from('settings')
+    .select('default_fee')
+    .eq('id', 1)
+    .single()
+  const defaultFee = Number(settingsData?.default_fee ?? 0)
+
   const { error: billingError } = await supabaseAdmin
     .from('billing')
     .insert({
       appointment_id: appointment.id,
       patient_id: patient.id,
-      fee: 0,
+      fee: defaultFee,
       items: [],
     })
 

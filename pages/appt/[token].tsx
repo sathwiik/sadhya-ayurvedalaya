@@ -11,6 +11,13 @@ interface Prescription {
   notes?: string
 }
 
+interface DispenseRecord {
+  drug_name: string
+  quantity: number
+  source: 'in_house' | 'external'
+  vendor: string | null
+}
+
 interface Props {
   valid: boolean
   expired: boolean
@@ -31,6 +38,9 @@ interface Props {
     diagnosis: string | null
     follow_up_date: string | null
     prescriptions: Prescription[]
+    dispensing: DispenseRecord[]
+    appointment_id: string
+    medicines_collected: boolean
   }
   token: string
 }
@@ -39,6 +49,7 @@ export default function TokenPage({ valid, expired, disabled, data, token }: Pro
   const [consentGiven, setConsentGiven] = useState(data?.consent_given ?? false)
   const [consentDeclined, setConsentDeclined] = useState(false)
   const [showModal, setShowModal] = useState(!data?.consent_given)
+  const [collected, setCollected] = useState(data?.medicines_collected ?? false)
 
   // Doctor has disabled this link
   if (disabled) {
@@ -230,6 +241,51 @@ export default function TokenPage({ valid, expired, disabled, data, token }: Pro
                   </div>
                 </div>
               )}
+
+              {data.dispensing.length > 0 && (() => {
+                const inHouse = data.dispensing.filter(d => d.source === 'in_house')
+                const external = data.dispensing.filter(d => d.source === 'external')
+
+                return (
+                  <div className="bg-white border border-gray-200 rounded-lg p-5 mb-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Medicines</p>
+                      {collected && (
+                        <span className="text-xs font-semibold px-3 py-1 rounded-full bg-green-100 text-green-700 border border-green-200">
+                          ✓ Collected
+                        </span>
+                      )}
+                    </div>
+
+                    {inHouse.length > 0 && (
+                      <div className={external.length > 0 ? 'mb-4' : ''}>
+                        <p className="text-xs font-medium text-green-700 mb-1">Dispensed at clinic</p>
+                        {inHouse.map((d, i) => (
+                          <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                            <p className={`text-sm font-medium ${collected ? 'line-through text-gray-400' : 'text-gray-900'}`}>{d.drug_name}</p>
+                            <span className="text-xs text-gray-500">{d.quantity} unit{d.quantity !== 1 ? 's' : ''}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {external.length > 0 && (
+                      <div>
+                        <p className="text-xs font-medium text-blue-700 mb-1">To be purchased</p>
+                        {external.map((d, i) => (
+                          <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                            <div>
+                              <p className={`text-sm font-medium ${collected ? 'line-through text-gray-400' : 'text-gray-900'}`}>{d.drug_name}</p>
+                              {d.vendor && <p className="text-xs text-gray-400 mt-0.5">From: {d.vendor}</p>}
+                            </div>
+                            <span className="text-xs text-gray-500">{d.quantity} unit{d.quantity !== 1 ? 's' : ''}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
 
               {data.follow_up_date && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-5 mb-4">

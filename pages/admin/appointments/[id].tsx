@@ -40,6 +40,12 @@ export default function EditAppointment() {
   const [resent, setResent] = useState(false)
   const [tokenActive, setTokenActive] = useState(true)
   const [togglingToken, setTogglingToken] = useState(false)
+  const [linkSent, setLinkSent] = useState(false)
+  const [reminderSent, setReminderSent] = useState(false)
+  const [medicinesCollected, setMedicinesCollected] = useState(false)
+  const [togglingLink, setTogglingLink] = useState(false)
+  const [togglingReminder, setTogglingReminder] = useState(false)
+  const [togglingMedicines, setTogglingMedicines] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -53,6 +59,9 @@ export default function EditAppointment() {
         setAppt(data as any)
         setForm(data as any)
         setTokenActive((data as any).token_active !== false)
+        setLinkSent(!!(data as any).link_sent)
+        setReminderSent(!!(data as any).reminder_sent)
+        setMedicinesCollected(!!(data as any).medicines_collected)
       })
   }, [id])
 
@@ -91,6 +100,42 @@ export default function EditAppointment() {
         />
       </div>
     )
+  }
+
+  async function handleToggleLinkSent() {
+    setTogglingLink(true)
+    const next = !linkSent
+    setLinkSent(next)
+    await fetch('/api/messages/mark-link-sent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ appointment_id: id, value: next }),
+    })
+    setTogglingLink(false)
+  }
+
+  async function handleToggleReminderSent() {
+    setTogglingReminder(true)
+    const next = !reminderSent
+    setReminderSent(next)
+    await fetch('/api/messages/mark-reminder-sent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ appointment_id: id, value: next }),
+    })
+    setTogglingReminder(false)
+  }
+
+  async function handleToggleMedicinesCollected() {
+    setTogglingMedicines(true)
+    const next = !medicinesCollected
+    setMedicinesCollected(next)
+    await fetch('/api/dispensing/toggle-complete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ appointment_id: id, collected: next }),
+    })
+    setTogglingMedicines(false)
   }
 
   async function handleToggleToken() {
@@ -263,6 +308,71 @@ export default function EditAppointment() {
             <span className="text-xs text-gray-400">
               {tokenActive ? 'Link is accessible to patient' : 'Link is blocked'}
             </span>
+          </div>
+
+          {/* Message status toggles */}
+          <div className="border-t border-gray-100 pt-4 space-y-3">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Message status</p>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Appointment link sent</p>
+                <p className="text-xs text-gray-400 mt-0.5">Has the patient received their appointment link via WhatsApp?</p>
+              </div>
+              <button
+                onClick={handleToggleLinkSent}
+                disabled={togglingLink}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none disabled:opacity-50 ${
+                  linkSent ? 'bg-green-600' : 'bg-gray-300'
+                }`}
+                role="switch"
+                aria-checked={linkSent}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                  linkSent ? 'translate-x-6' : 'translate-x-1'
+                }`} />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Reminder sent</p>
+                <p className="text-xs text-gray-400 mt-0.5">Has the patient received a reminder for this appointment?</p>
+              </div>
+              <button
+                onClick={handleToggleReminderSent}
+                disabled={togglingReminder}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none disabled:opacity-50 ${
+                  reminderSent ? 'bg-green-600' : 'bg-gray-300'
+                }`}
+                role="switch"
+                aria-checked={reminderSent}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                  reminderSent ? 'translate-x-6' : 'translate-x-1'
+                }`} />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Medicines collected</p>
+                <p className="text-xs text-gray-400 mt-0.5">Has the patient collected all dispensed medicines?</p>
+              </div>
+              <button
+                onClick={handleToggleMedicinesCollected}
+                disabled={togglingMedicines}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none disabled:opacity-50 ${
+                  medicinesCollected ? 'bg-green-600' : 'bg-gray-300'
+                }`}
+                role="switch"
+                aria-checked={medicinesCollected}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                  medicinesCollected ? 'translate-x-6' : 'translate-x-1'
+                }`} />
+              </button>
+            </div>
           </div>
         </div>
       )}

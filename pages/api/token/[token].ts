@@ -24,6 +24,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       token_expires_at,
       token_active,
       consent_given,
+      medicines_collected,
       patients (
         name,
         dob
@@ -34,6 +35,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         frequency,
         days,
         notes
+      ),
+      prescription_dispensing (
+        id,
+        drug_name,
+        quantity,
+        source,
+        vendor,
+        completed
       )
     `)
     .eq('token', token)
@@ -81,5 +90,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     diagnosis: isCompleted ? appt.diagnosis : null,
     follow_up_date: isCompleted ? appt.follow_up_date : null,
     prescriptions: isCompleted ? appt.prescriptions : [],
+    dispensing: isCompleted ? (appt as any).prescription_dispensing ?? [] : [],
+    appointment_id: appt.id,
+    medicines_collected: appt.medicines_collected ?? false,
   })
 }

@@ -30,6 +30,11 @@ export default function StockPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValues, setEditValues] = useState<Partial<StockItem>>({})
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [showRestock, setShowRestock] = useState(false)
+  const [restockRows, setRestockRows] = useState<{ drug_name: string; qty: number }[]>([{ drug_name: '', qty: 0 }])
+  const [restockError, setRestockError] = useState('')
+  const [restocking, setRestocking] = useState(false)
+  const [restockDone, setRestockDone] = useState(false)
 
   useEffect(() => { loadStock() }, [])
 
@@ -89,6 +94,32 @@ export default function StockPage() {
     setConfirmDeleteId(null)
   }
 
+  async function handleRestock() {
+    setRestockError('')
+    const valid = restockRows.filter(r => r.drug_name.trim() && r.qty > 0)
+    if (valid.length === 0) { setRestockError('Add at least one item with a quantity greater than 0.'); return }
+
+    const unknown = valid.filter(r => !items.find(i => i.drug_name === r.drug_name))
+    if (unknown.length > 0) {
+      setRestockError(`Not in stock: ${unknown.map(r => r.drug_name).join(', ')}. Add them first.`)
+      return
+    }
+
+    setRestocking(true)
+    for (const row of valid) {
+      const item = items.find(i => i.drug_name === row.drug_name)!
+      await supabase
+        .from('medicine_stock')
+        .update({ quantity: item.quantity + row.qty, updated_at: new Date().toISOString() })
+        .eq('id', item.id)
+    }
+    setRestocking(false)
+    setRestockDone(true)
+    setRestockRows([{ drug_name: '', qty: 0 }])
+    setTimeout(() => { setRestockDone(false); setShowRestock(false) }, 1500)
+    loadStock()
+  }
+
   function startEdit(item: StockItem) {
     setEditingId(item.id)
     setEditValues({
@@ -105,7 +136,6 @@ export default function StockPage() {
         type={type}
         value={(editValues as any)[field] ?? ''}
         onChange={e => setEditValues(v => ({ ...v, [field]: type === 'number' ? Number(e.target.value) : e.target.value }))}
-        onBlur={() => editingId && handleBlurSave(editingId)}
         autoFocus={field === 'quantity'}
         className="border border-gray-300 rounded px-2 py-1 text-sm w-full focus:outline-none focus:ring-1 focus:ring-green-600"
       />
@@ -155,10 +185,94 @@ export default function StockPage() {
         </form>
       </div>
 
+      {/* Restock panel */}
+      <div className="bg-white border border-gray-200 rounded-lg mb-6">
+        <button
+          onClick={() => { setShowRestock(s => !s); setRestockError('') }}
+          className="w-full flex items-center justify-between px-5 py-4 text-left"
+        >
+          <div>
+            <p className="font-semibold text-gray-900">Restock items</p>
+            <p className="text-xs text-gray-400 mt-0.5">Add incoming quantities to multiple existing stock items at once</p>
+          </div>
+          <span className="text-gray-400 text-sm">{showRestock ? '▲' : '▼'}</span>
+        </button>
+
+        {showRestock && (
+          <div className="border-t border-gray-100 p-5 space-y-3">
+            {restockRows.map((row, i) => (
+              <div key={i} className="flex gap-3 items-center">
+                <div className="flex-1">
+                  <input
+                    list="stock-drugs"
+                    value={row.drug_name}
+                    onChange={e => setRestockRows(prev => prev.map((r, j) => j === i ? { ...r, drug_name: e.target.value } : r))}
+                    placeholder="Drug name"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600"
+                  />
+                </div>
+                <div className="w-32">
+                  <input
+                    type="number"
+                    min={1}
+                    value={row.qty || ''}
+                    onChange={e => setRestockRows(prev => prev.map((r, j) => j === i ? { ...r, qty: Number(e.target.value) } : r))}
+                    placeholder="Units to add"
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600"
+                  />
+                </div>
+                {restockRows.length > 1 && (
+                  <button
+                    onClick={() => setRestockRows(prev => prev.filter((_, j) => j !== i))}
+                    className="text-gray-300 hover:text-red-400 text-lg leading-none"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
+
+            {/* Datalist for autocomplete */}
+            <datalist id="stock-drugs">
+              {items.map(i => <option key={i.id} value={i.drug_name} />)}
+            </datalist>
+
+            <button
+              onClick={() => setRestockRows(prev => [...prev, { drug_name: '', qty: 0 }])}
+              className="text-sm text-green-700 font-medium hover:underline"
+            >
+              + Add another item
+            </button>
+
+            {restockError && (
+              <div className="bg-red-50 border border-red-200 rounded-md px-4 py-3">
+                <p className="text-red-700 text-sm">{restockError}</p>
+              </div>
+            )}
+
+            <div className="flex items-center gap-3 pt-1">
+              <button
+                onClick={handleRestock}
+                disabled={restocking || restockDone}
+                className="bg-green-700 text-white px-5 py-2 rounded-md text-sm font-semibold hover:bg-green-800 disabled:opacity-50"
+              >
+                {restockDone ? 'Updated ✓' : restocking ? 'Updating…' : 'Update stock'}
+              </button>
+              <button
+                onClick={() => { setShowRestock(false); setRestockRows([{ drug_name: '', qty: 0 }]); setRestockError('') }}
+                className="text-sm text-gray-400 hover:underline"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Stock table */}
       <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
         <div className="px-5 py-4 border-b border-gray-100">
-          <p className="text-xs text-gray-400">Click any field to edit. Changes save automatically on leaving the field.</p>
+          <p className="text-xs text-gray-400">Click Edit to update a stock item.</p>
         </div>
         <table className="w-full text-sm">
           <thead>
@@ -177,33 +291,40 @@ export default function StockPage() {
               const { label, cls } = statusLabel(item.quantity, item.low_stock_threshold)
               const isEditing = editingId === item.id
               return (
-                <tr key={item.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50 cursor-pointer"
-                  onClick={() => !isEditing && startEdit(item)}>
+                <tr key={item.id} className="border-b border-gray-50 last:border-0">
                   <td className="px-4 py-3 font-medium text-gray-900">{item.drug_name}</td>
-                  <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                  <td className="px-4 py-3">
                     {isEditing ? <EditCell field="quantity" type="number" /> : <span className={item.quantity === 0 ? 'text-red-600 font-semibold' : ''}>{item.quantity}</span>}
                   </td>
-                  <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                  <td className="px-4 py-3">
                     {isEditing ? <EditCell field="unit" /> : item.unit}
                   </td>
-                  <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                  <td className="px-4 py-3">
                     {isEditing ? <EditCell field="low_stock_threshold" type="number" /> : item.low_stock_threshold}
                   </td>
-                  <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                  <td className="px-4 py-3">
                     {isEditing ? <EditCell field="price" type="number" /> : item.price != null ? `₹${item.price}` : '—'}
                   </td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${cls}`}>{label}</span>
                   </td>
-                  <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
-                    {confirmDeleteId === item.id ? (
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
+                    {isEditing ? (
+                      <span className="inline-flex items-center gap-2">
+                        <button onClick={() => handleBlurSave(item.id)} className="text-xs text-green-700 font-semibold hover:underline">Save</button>
+                        <button onClick={() => { setEditingId(null); setEditValues({}) }} className="text-xs text-gray-400 hover:underline">Cancel</button>
+                      </span>
+                    ) : confirmDeleteId === item.id ? (
                       <span className="inline-flex items-center gap-2">
                         <span className="text-xs text-gray-500">Delete?</span>
                         <button onClick={() => handleDelete(item.id)} className="text-xs text-red-600 font-semibold hover:underline">Confirm</button>
                         <button onClick={() => setConfirmDeleteId(null)} className="text-xs text-gray-400 hover:underline">Cancel</button>
                       </span>
                     ) : (
-                      <button onClick={() => setConfirmDeleteId(item.id)} className="text-xs text-red-500 hover:underline">Delete</button>
+                      <span className="inline-flex items-center gap-3">
+                        <button onClick={() => startEdit(item)} className="text-xs text-green-700 font-medium hover:underline">Edit</button>
+                        <button onClick={() => setConfirmDeleteId(item.id)} className="text-xs text-red-500 hover:underline">Delete</button>
+                      </span>
                     )}
                   </td>
                 </tr>

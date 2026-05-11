@@ -64,7 +64,7 @@ export default function MessagesPage() {
     setLoading(false)
   }
 
-  function normalise(data: any[]): MessageCard[] {
+  function normalise(data: any[] | null): MessageCard[] {
     return (data ?? []).map(r => ({
       id: r.id,
       patient_name: r.patients?.name ?? '',

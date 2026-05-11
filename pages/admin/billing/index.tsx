@@ -3,13 +3,12 @@ import dynamic from 'next/dynamic'
 import AdminLayout from '@/components/AdminLayout'
 import { supabase } from '@/lib/supabase'
 
-// Both PDFDownloadLink and ReceiptPDF must be dynamically imported
-// to prevent react-pdf from running on the server (it uses browser APIs)
-const PDFDownloadLink = dynamic(
-  () => import('@react-pdf/renderer').then(m => m.PDFDownloadLink),
+// ReceiptDownloadButton wraps PDFDownloadLink + ReceiptPDF in a single dynamic import
+// to avoid react-pdf running in SSR context (useSyncExternalStore error)
+const ReceiptDownloadButton = dynamic(
+  () => import('@/components/ReceiptDownloadButton'),
   { ssr: false }
 )
-const ReceiptPDF = dynamic(() => import('@/components/ReceiptPDF'), { ssr: false })
 
 interface BillingItem { name: string; amount: number }
 interface BillingRow {
@@ -152,7 +151,11 @@ export default function BillingPage() {
               <tr><td colSpan={6} className="px-5 py-8 text-center text-sm text-gray-400">No billing records.</td></tr>
             ) : filtered.map(row => (
               <tr key={row.id} className="border-b border-gray-50 last:border-0">
-                <td className="px-4 py-3 text-gray-700">{row.appointments?.appt_date ?? '—'}</td>
+                <td className="px-4 py-3 text-gray-700">
+                  {row.appointments?.appt_date
+                    ? new Date(row.appointments.appt_date).toLocaleDateString('en-GB')
+                    : '—'}
+                </td>
                 <td className="px-4 py-3 font-medium text-gray-900">{(row.appointments?.patients as any)?.name ?? '—'}</td>
                 <td className="px-4 py-3 text-gray-900 font-medium">₹{Number(row.fee).toLocaleString('en-IN')}</td>
                 <td className="px-4 py-3">
@@ -169,14 +172,11 @@ export default function BillingPage() {
                         className="text-xs text-gray-700 font-medium hover:underline">Mark paid</button>
                     )}
                     {row.paid && (
-                      <PDFDownloadLink
-                        document={<ReceiptPDF row={row} clinicName={settings.clinic_name} doctorName={settings.doctor_name} />}
-                        fileName={`receipt_${(row.appointments?.patients as any)?.name?.replace(/\s+/g, '_') ?? 'patient'}_${row.appointments?.appt_date}.pdf`}
-                      >
-                        {({ loading }) => (
-                          <span className="text-xs text-gray-500 hover:underline cursor-pointer">{loading ? '…' : 'Receipt'}</span>
-                        )}
-                      </PDFDownloadLink>
+                      <ReceiptDownloadButton
+                        row={row}
+                        clinicName={settings.clinic_name}
+                        doctorName={settings.doctor_name}
+                      />
                     )}
                   </span>
                 </td>

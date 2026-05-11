@@ -25,3 +25,10 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# Claude Code
+.claude/
+
+# Generated docs
+docs/doctor-features.pdf
+docs/doctor-features.html
