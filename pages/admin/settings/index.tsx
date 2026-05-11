@@ -8,6 +8,8 @@ interface Settings {
   address: string
   phone: string
   email: string
+  hero_tagline: string
+  about_text: string
   consent_text: string
   default_fee: number
 }
@@ -18,6 +20,8 @@ const defaults: Settings = {
   address: '',
   phone: '',
   email: '',
+  hero_tagline: 'Traditional Ayurvedic healing for modern wellness. Rooted in nature, guided by science.',
+  about_text: '',
   consent_text: 'Saadhya Ayurvedalaya stores your appointment details to provide you with care. By tapping Agree, you allow us to show your records here. You can request deletion of your data at any time by calling us.',
   default_fee: 0,
 }
@@ -95,6 +99,26 @@ export default function SettingsPage() {
               <input type="email" value={form.email} onChange={set('email')}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600" />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Hero tagline</label>
+            <input value={form.hero_tagline} onChange={set('hero_tagline')}
+              placeholder="Traditional Ayurvedic healing for modern wellness…"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600" />
+            <p className="text-xs text-gray-400 mt-1">Subtitle shown under the clinic name on the homepage.</p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">About text</label>
+            <textarea
+              rows={5}
+              value={form.about_text}
+              onChange={set('about_text')}
+              placeholder={`Dr. ${form.doctor_name} is a qualified Ayurvedic practitioner…`}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 resize-y"
+            />
+            <p className="text-xs text-gray-400 mt-1">Shown in the About section on the homepage.</p>
           </div>
 
           <div>

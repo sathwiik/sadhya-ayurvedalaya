@@ -16,6 +16,8 @@ interface Settings {
   address: string
   phone: string
   email: string
+  hero_tagline: string
+  about_text: string
 }
 
 interface Props {
@@ -30,9 +32,9 @@ export default function HomePage({ settings, posts }: Props) {
       <section className="bg-green-700 text-white py-20 px-4">
         <div className="max-w-3xl mx-auto text-center">
           <h1 className="text-3xl md:text-4xl font-bold mb-4">{settings.clinic_name}</h1>
-          <p className="text-green-100 text-lg mb-8">
-            Traditional Ayurvedic healing for modern wellness. Rooted in nature, guided by science.
-          </p>
+          {settings.hero_tagline && (
+            <p className="text-green-100 text-lg mb-8">{settings.hero_tagline}</p>
+          )}
           <a
             href={`tel:${settings.phone}`}
             className="inline-block bg-white text-green-700 font-semibold px-6 py-3 rounded-lg hover:bg-green-50"
@@ -43,15 +45,12 @@ export default function HomePage({ settings, posts }: Props) {
       </section>
 
       {/* About */}
-      <section className="max-w-3xl mx-auto px-4 py-16">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">About Dr. {settings.doctor_name}</h2>
-        <p className="text-gray-600 leading-relaxed">
-          Dr. {settings.doctor_name} is a qualified Ayurvedic practitioner dedicated to holistic,
-          personalised care. With a deep grounding in classical Ayurvedic texts and years of clinical
-          experience, the practice blends time-tested remedies with an understanding of each
-          patient&apos;s unique constitution.
-        </p>
-      </section>
+      {settings.about_text && (
+        <section className="max-w-3xl mx-auto px-4 py-16">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">About Dr. {settings.doctor_name}</h2>
+          <p className="text-gray-600 leading-relaxed whitespace-pre-line">{settings.about_text}</p>
+        </section>
+      )}
 
       {/* Blog previews */}
       {posts.length > 0 && (
@@ -137,6 +136,8 @@ export const getServerSideProps: GetServerSideProps = async () => {
         address: '',
         phone: '',
         email: '',
+        hero_tagline: '',
+        about_text: '',
       },
       posts: postsData ?? [],
     },
