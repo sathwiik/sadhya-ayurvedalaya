@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { useRouter } from 'next/router'
 import { supabase } from '@/lib/supabase'
 import Head from 'next/head'
 
 export default function Login() {
+  const router = useRouter()
   const [email, setEmail] = useState('')
-  const [sent, setSent] = useState(false)
+  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -13,18 +15,13 @@ export default function Login() {
     setError('')
     setLoading(true)
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
-      },
-    })
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     setLoading(false)
     if (error) {
-      setError(error.message)
+      setError('Invalid email or password.')
     } else {
-      setSent(true)
+      router.replace('/admin')
     }
   }
 
@@ -41,41 +38,37 @@ export default function Login() {
             <p className="text-gray-500 text-sm mt-1">Doctor login</p>
           </div>
 
-          {sent ? (
-            <div className="text-center">
-              <div className="text-4xl mb-3">📬</div>
-              <p className="font-semibold text-gray-800 mb-1">Check your email</p>
-              <p className="text-sm text-gray-500">
-                Click the link in the email sent to <span className="font-medium">{email}</span> to log in.
-              </p>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email address</label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600"
+                placeholder="doctor@example.com"
+              />
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email address
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600"
-                  placeholder="doctor@example.com"
-                />
-              </div>
-              {error && (
-                <p className="text-red-600 text-sm">{error}</p>
-              )}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-green-700 text-white py-2.5 rounded-md font-semibold text-sm hover:bg-green-800 disabled:opacity-50"
-              >
-                {loading ? 'Sending…' : 'Send login link'}
-              </button>
-            </form>
-          )}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-600"
+              />
+            </div>
+            {error && <p className="text-red-600 text-sm">{error}</p>}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-green-700 text-white py-2.5 rounded-md font-semibold text-sm hover:bg-green-800 disabled:opacity-50"
+            >
+              {loading ? 'Signing in…' : 'Sign in'}
+            </button>
+          </form>
         </div>
       </div>
     </>
