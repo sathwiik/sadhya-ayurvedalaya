@@ -35,12 +35,16 @@ export default function HomePage({ settings, posts }: Props) {
           {settings.hero_tagline && (
             <p className="text-green-100 text-lg mb-8">{settings.hero_tagline}</p>
           )}
-          <a
-            href={`tel:${settings.phone}`}
-            className="inline-block bg-white text-green-700 font-semibold px-6 py-3 rounded-lg hover:bg-green-50"
-          >
-            Book an appointment — call us
-          </a>
+          {settings.phone && (
+            <a
+              href={`https://wa.me/91${settings.phone}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block bg-white text-green-700 font-semibold px-6 py-3 rounded-lg hover:bg-green-50"
+            >
+              Book an appointment — WhatsApp us
+            </a>
+          )}
         </div>
       </section>
 
@@ -97,8 +101,13 @@ export default function HomePage({ settings, posts }: Props) {
           )}
           {settings.phone && (
             <div className="bg-white border border-gray-200 rounded-lg p-5">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Phone</p>
-              <a href={`tel:${settings.phone}`} className="text-green-700 font-semibold text-sm hover:underline">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">WhatsApp / Phone</p>
+              <a
+                href={`https://wa.me/91${settings.phone}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-green-700 font-semibold text-sm hover:underline"
+              >
                 {settings.phone}
               </a>
             </div>
